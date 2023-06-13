@@ -3,6 +3,7 @@ from django.db.models.query import QuerySet
 from django.utils.text import slugify
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.urls import reverse
 
 
 class PublishedManager(models.Manager):
@@ -31,7 +32,8 @@ class Post(models.Model):
     slug = models.SlugField(
         max_length=250,
         verbose_name='метка',
-        unique=True,
+        # предотвратит сохранение нового поста с тем же именем на дату публикации
+        unique_for_date='publish',
         null=True,
         blank=True
     )
@@ -74,9 +76,16 @@ class Post(models.Model):
     objects = models.Manager()  # менеджер по умолчанию
     published = PublishedManager()  # кастомный менеджер
 
-    def save(self, *args, **Kwargs):
-        self.slug = slugify(self.title)
-        super().save(*args, **Kwargs)
+    def get_absolute_url(self):
+        return reverse(
+            'blog:post_detail', 
+            args=[
+                self.publish.year,
+                self.publish.month,
+                self.publish.day,
+                self.slug
+            ]
+        )
 
     def __str__(self):
         return self.title
